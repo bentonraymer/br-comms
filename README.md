@@ -49,7 +49,7 @@ There are two kinds of traffic:
 
 1. **HTTPS is required.** Browsers only allow the microphone on `https://` (or `localhost`). Your proxy must terminate TLS and support WebSockets.
 2. **Open and forward the media port** (`40000` UDP and TCP by default) from the internet to the host. If you change `RTC_PORT`, change the port mappings too.
-3. **Set `ANNOUNCED_ADDRESS`** to the public IP or hostname that phones use to reach port 40000. A hostname is resolved to an IP at startup, so restart the container if your dynamic-DNS IP changes.
+3. **Set `ANNOUNCED_ADDRESS`** to the public IP or hostname that phones use to reach port 40000. A hostname is resolved to an IP at startup (falling back to public DNS if the host's resolver can't find it), so restart the container if your dynamic-DNS IP changes. The record must point at the server itself: if you use Cloudflare, keep it **DNS only** (grey cloud), or just use the server's IP.
 
 ### Caddy
 
