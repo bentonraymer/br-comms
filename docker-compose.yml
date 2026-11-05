@@ -1,0 +1,18 @@
+services:
+  br-comms:
+    image: ghcr.io/bentonraymer/br-comms:latest
+    # build: .                             # or build locally instead of pulling
+    container_name: br-comms
+    restart: unless-stopped
+    environment:
+      SITE_PASSWORD: change-me             # required: the one password for the site
+      ANNOUNCED_ADDRESS: comms.example.com # required: public IP or hostname phones use to reach this server
+      RTC_PORT: 40000                      # media port (UDP + TCP); must match the port mapping below
+      # ROOM_TTL_HOURS: 24
+      # SESSION_SECRET: <random string>    # optional; auto-generated and stored in /data otherwise
+    ports:
+      - "3000:3000"            # web + websocket -> put your reverse proxy in front of this
+      - "40000:40000/udp"      # media (NOT through the proxy; forward directly)
+      - "40000:40000/tcp"      # media fallback for networks that block UDP
+    volumes:
+      - ./data:/data
