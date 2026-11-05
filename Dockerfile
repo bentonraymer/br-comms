@@ -1,14 +1,21 @@
-# ---- build ----
-FROM node:24-bookworm-slim AS build
-# Toolchain for mediasoup's native worker (used only if no prebuilt binary matches).
+# ---- web + server bundle: built once on the native build platform (no emulation) ----
+FROM --platform=$BUILDPLATFORM node:24-bookworm-slim AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Scripts skipped: mediasoup's native worker isn't needed to bundle JS.
+RUN npm ci --ignore-scripts
+COPY . .
+RUN npm run build
+
+# ---- production dependencies for the target architecture ----
+FROM node:24-bookworm-slim AS deps
+# Toolchain only used if mediasoup has no prebuilt worker for this platform.
 RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 python3-pip build-essential ca-certificates \
+ && apt-get install -y --no-install-recommends python3 python3-pip make g++ ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
-COPY . .
-RUN npm run build && npm prune --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
 # ---- runtime ----
 FROM node:24-bookworm-slim
@@ -17,8 +24,8 @@ ENV NODE_ENV=production \
     PORT=3000 \
     RTC_PORT=40000
 WORKDIR /app
-COPY --from=build /app/package.json ./
-COPY --from=build /app/node_modules ./node_modules
+COPY package.json ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 RUN mkdir -p /data && chown node:node /data
 USER node
